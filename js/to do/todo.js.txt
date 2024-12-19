@@ -1,0 +1,107 @@
+document.addEventListener('DOMContentLoaded', loadTasks);
+
+function loadTasks() {
+  const tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+  tasks.forEach((task, index) => addTaskToDOM(task, index + 1));
+}
+
+function addTaskToDOM(task, index) {
+  const taskList = document.getElementById('taskList');
+  const li = document.createElement('li');
+  li.classList.add('task-item');
+  if (task.completed) li.classList.add('completed');
+
+  li.innerHTML = `
+    <span class="task-serial">${index}.</span>
+    <span>${task.text} (${task.category}, ${task.priority})</span>
+    <div class="task-actions">
+      <button onclick="toggleComplete('${task.id}')">✔</button>
+      <button onclick="editTask('${task.id}')">✏️</button>
+      <button onclick="deleteTask('${task.id}')">❌</button>
+    </div>
+  `;
+  li.id = task.id;
+  taskList.appendChild(li);
+}
+
+function saveTask(task) {
+  const tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+  tasks.push(task);
+  localStorage.setItem('tasks', JSON.stringify(tasks));
+}
+
+function updateLocalStorage(updatedTasks) {
+  localStorage.setItem('tasks', JSON.stringify(updatedTasks));
+}
+
+function addTask(e) {
+  e.preventDefault();
+  const text = document.getElementById('taskInput').value;
+  const category = document.getElementById('category').value;
+  const priority = document.getElementById('priority').value;
+
+  const task = {
+    id: Date.now().toString(),
+    text,
+    category,
+    priority,
+    completed: false,
+  };
+
+  addTaskToDOM(task, document.getElementById('taskList').children.length + 1);
+  saveTask(task);
+  document.getElementById('taskForm').reset();
+}
+
+function toggleComplete(taskId) {
+  const tasks = JSON.parse(localStorage.getItem('tasks'));
+  const updatedTasks = tasks.map(task => {
+    if (task.id === taskId) {
+      task.completed = !task.completed;
+    }
+    return task;
+  });
+
+  updateLocalStorage(updatedTasks);
+  document.getElementById(taskId).classList.toggle('completed');
+}
+
+function deleteTask(taskId) {
+  const tasks = JSON.parse(localStorage.getItem('tasks')).filter(task => task.id !== taskId);
+  updateLocalStorage(tasks);
+  document.getElementById(taskId).remove();
+  resetSerialNumbers();
+}
+
+function editTask(taskId) {
+  const tasks = JSON.parse(localStorage.getItem('tasks'));
+  const task = tasks.find(task => task.id === taskId);
+  if (task) {
+    document.getElementById('taskInput').value = task.text;
+    document.getElementById('category').value = task.category;
+    document.getElementById('priority').value = task.priority;
+    deleteTask(taskId);
+  }
+}
+
+function toggleDarkMode() {
+  document.body.classList.toggle('dark-mode');
+}
+
+function searchTasks() {
+  const searchQuery = document.getElementById('search').value.toLowerCase();
+  const tasks = document.querySelectorAll('.task-item');
+  tasks.forEach(task => {
+    const taskText = task.textContent.toLowerCase();
+    task.style.display = taskText.includes(searchQuery) ? '' : 'none';
+  });
+}
+
+function resetSerialNumbers() {
+  const tasks = document.querySelectorAll('.task-item');
+  tasks.forEach((task, index) => {
+    task.querySelector('.task-serial').textContent = `${index + 1}.`;
+  });
+}
+
+document.getElementById('taskForm').addEventListener('submit', addTask);
